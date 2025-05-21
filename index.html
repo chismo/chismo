@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-F">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project: Fandom Forge</title>
+    <script type="module" src="index.tsx"></script>
+    <style id="game-styles"></style> <!-- Styles will be injected here -->
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.0.0"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Setup Screen (Visible Initially) -->
+        <div id="setup-screen">
+            <h1>Welcome, Aspiring Doujin Author!</h1>
+            <p>Let's set up your profile to start creating.</p>
+
+            <div class="input-group">
+                <label for="api-key">Google AI Studio API Key (Required):</label>
+                <input type="password" id="api-key" placeholder="Enter your Gemini API Key">
+                <small>Needed for AI fanfic generation. Your key is used directly by your browser and not stored on any server by this game. This is for local prototyping only and is insecure for public applications.</small>
+            </div>
+
+            <div class="input-group">
+                <label for="player-name">Your Author Name:</label>
+                <input type="text" id="player-name" placeholder="e.g., FanficMaster123">
+            </div>
+            <hr>
+            <h3>Primary Fandom Setup</h3>
+            <div class="input-group">
+                <label for="fandom-work-title">Favorite Work (Title):</label>
+                <input type="text" id="fandom-work-title" placeholder="e.g., Galactic Heroes Saga">
+            </div>
+            <div class="input-group">
+                <label for="fandom-work-desc">Work Description (Briefly):</label>
+                <textarea id="fandom-work-desc" rows="2" placeholder="e.g., Epic space opera about rival commanders"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="fandom-fav-char">Favorite Character Name:</label>
+                <input type="text" id="fandom-fav-char" placeholder="e.g., Commander Alex">
+            </div>
+            <div class="input-group">
+                <label for="fandom-fav-char-desc">Favorite Character Description (Personality, Role):</label>
+                <textarea id="fandom-fav-char-desc" rows="2" placeholder="e.g., Stoic but kind, brilliant strategist, struggles with past trauma"></textarea>
+            </div>
+            <div class="input-group">
+                <label for="fandom-fav-pairing">Favorite Pairing (A/B):</label>
+                <input type="text" id="fandom-fav-pairing" placeholder="e.g., Alex/Ben">
+            </div>
+            <div class="input-group">
+                <label for="fandom-pairing-interp">Pairing Interpretation/Trope:</label>
+                <textarea id="fandom-pairing-interp" rows="2" placeholder="e.g., Enemies-to-lovers, slow burn angst"></textarea>
+            </div>
+            <div class="input-group">
+                 <label for="initial-tutorial-friend-toggle-setup" class="checkbox-group" style="font-weight: normal;">
+                    <input type="checkbox" id="initial-tutorial-friend-toggle-setup" checked> Enable Supportive Deokhu Friend (Tutorial NPC)?
+                </label>
+                <small>This NPC will provide tips and encouragement via SNS posts.</small>
+            </div>
+            <button id="start-game-button">Start Creating!</button>
+        </div>
+
+        <!-- Main Game Screen (Hidden Initially) -->
+        <div id="main-game-screen" style="display: none;">
+            <div id="stats-bar">
+                <span>Money: <span id="stat-money">0</span> G</span> |
+                <span>Stamina: <span id="stat-stamina">0</span> / 0</span> |
+                <span>Writing: <span id="stat-writing">0</span></span> |
+                <span>Popularity: <span id="stat-popularity">0</span></span> |
+                <span>Deok-ryeok: <span id="stat-deokryeok">0</span></span> |
+                <span>Date: Week <span id="stat-week">1</span>, Day <span id="stat-day">1</span></span>
+            </div>
+
+            <div id="event-bar" style="display: none;">
+                Current Event: <strong id="event-name-display">None</strong> for Fandom: <strong id="event-fandom-display">N/A</strong> | Deadline: Week <span id="event-deadline-display">N/A</span>
+                <button id="view-upcoming-events-button" style="margin-left: 10px; padding: 3px 8px; font-size: 0.8em;">View Events</button>
+            </div>
+
+            <div id="game-controls">
+                 <button id="manual-save-button">Save Game</button>
+                 <button id="new-game-button" class="danger-button">Reset / New Game</button>
+                 <button id="edit-profile-button">Edit Profile</button>
+                 <button id="analytics-button">View Analytics</button>
+                 <button id="view-daily-log-button">View Daily Log</button>
+                 <div class="input-group" style="display: inline-block; margin-left: 15px; margin-bottom:0; vertical-align: middle;">
+                    <label for="tutorial-friend-toggle-main" class="checkbox-group" style="font-weight: normal; font-size:0.9em;">
+                        <input type="checkbox" id="tutorial-friend-toggle-main"> Supportive Friend
+                    </label>
+                </div>
+            </div>
+
+            <div id="active-project-info-bar" class="modal-like-area" style="display: none; margin-bottom:15px; background-color: #e3f2fd;">
+                <div class="modal-header" style="padding-bottom: 5px; margin-bottom: 10px;">
+                    <h3 style="margin:0;">Active Fanfic Project: "<span id="active-project-title-display">None</span>"</h3>
+                    <button id="view-active-project-button">View/Finalize Project</button>
+                </div>
+                 <p style="font-size:0.9em; margin: 5px 0;">
+                    For Fandom: <strong id="active-project-fandom-display">N/A</strong><br>
+                    Progress: <span id="active-project-progress-display">0</span>%
+                    (<span id="active-project-genre-display">N/A</span> - <span id="active-project-materials-display">N/A</span>)
+                </p>
+            </div>
+
+            <div id="main-content">
+                <div id="scheduler">
+                    <h2>Plan Your Week</h2>
+                    <div id="schedule-days"></div>
+                    <button id="start-week-button" disabled>Start Week</button>
+                    <small id="scheduler-validation-msg" style="display:block; color:red; margin-top:5px;">Please select an action for all days to start the week.</small>
+                    <div id="scheduler-active-project-warning" style="color: #c62828; font-weight: bold; margin-top: 8px; padding: 8px; background-color: #ffebee; border: 1px solid #c62828; border-radius: 4px; display: none;">
+                        <!-- Warning message will be populated by JS -->
+                    </div>
+                </div>
+
+
+                <div id="action-buttons">
+                    <button id="manage-fanfic-project-button">Plan/Write Fanfic</button>
+                    <button id="view-fics-button">View My Fics</button>
+                    <button id="view-sns-button">Check SNS</button>
+                    <button id="player-custom-sns-post-button">Write SNS Post</button>
+                </div>
+
+                <div id="daily-popup" style="display: none;">
+                    <img id="daily-popup-image" src="images/placeholder_default.png" alt="Current Action">
+                    <p id="daily-popup-text">Doing Action...</p>
+                     <p id="daily-project-progress-text" style="font-size:0.9em; color:#c5e1a5;"></p>
+                </div>
+
+                 <div id="sns-feed" class="modal-like-area" style="display: none;">
+                     <div class="modal-header"><h2>Simulated SNS Feed</h2><button class="close-modal-button" data-target="sns-feed">X</button></div>
+                     <div id="posts-container"></div>
+                 </div>
+
+                <div id="fanfic-planning-modal" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>Plan New Fanfic Project</h2><button class="close-modal-button" data-target="fanfic-planning-modal">X</button></div>
+                    <div class="input-group">
+                        <label for="plan-fic-fandom-set">Fandom Set for this Fic:</label>
+                        <select id="plan-fic-fandom-set">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="plan-fic-title">Fanfic Title:</label>
+                        <input type="text" id="plan-fic-title" placeholder="Your awesome title">
+                    </div>
+                    <div class="input-group">
+                        <label>Genres (Select up to 2):</label>
+                        <div id="plan-fic-genre-checkboxes" class="checkbox-group">
+                            <!-- Genre checkboxes will be populated by JS -->
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="plan-fic-materials">Key Materials/Tropes (Ctrl+Click for multiple, or select '-- None --'):</label>
+                        <select id="plan-fic-materials" multiple size="6">
+                            <!-- Material options will be populated by JS -->
+                        </select>
+                    </div>
+                    <div class="input-group" id="plan-fic-sequel-group" style="display:none;">
+                        <label for="plan-fic-previous-fic-for-sequel">Select Previous Fic to Continue:</label>
+                        <select id="plan-fic-previous-fic-for-sequel">
+                            <!-- Player's published fics for the selected fandom set will appear here -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="plan-fic-scenario">Overall Scenario Plan (brief summary):</label>
+                        <textarea id="plan-fic-scenario" rows="3" placeholder="e.g., A meets B under mysterious circumstances, they overcome a shared challenge, and realize their feelings."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="plan-fic-target-progress">Target Complexity/Length (Work Units):</label>
+                        <select id="plan-fic-target-progress">
+                            <option value="50">Short Story (approx. 50 WU)</option>
+                            <option value="100" selected>Medium Story (approx. 100 WU)</option>
+                            <option value="150">Long Story (approx. 150 WU)</option>
+                            <option value="200">Epic Story (approx. 200 WU)</option>
+                        </select>
+                    </div>
+                    <button id="start-new-project-button">Start This Project!</button>
+                </div>
+
+                 <div id="active-project-modal" class="modal-like-area" style="display: none;">
+                     <div class="modal-header"><h2>Active Project: "<span id="modal-project-title"></span>"</h2><button class="close-modal-button" data-target="active-project-modal">X</button></div>
+                     <p><strong>Fandom:</strong> <span id="modal-project-fandom-set-name"></span></p>
+                     <p><strong>Genres:</strong> <span id="modal-project-genre"></span> | <strong>Materials:</strong> <span id="modal-project-materials"></span></p>
+                     <p id="modal-project-sequel-info" style="display:none;"><strong>Sequel to:</strong> <span id="modal-project-previous-fic-title"></span></p>
+                     <p><strong>Scenario Plan:</strong></p>
+                     <pre id="modal-project-scenario"></pre>
+                     <p><strong>Progress:</strong> <span id="modal-project-progress">0</span> / <span id="modal-project-target">100</span> Work Units</p>
+
+                     <button id="finalize-fic-button" disabled>Finalize Manuscript with AI 🤖</button>
+                     <span id="fic-loading-indicator" style="display:none; margin-left: 10px;">Generating... Please Wait...</span>
+
+                     <textarea id="generated-fic-output" rows="15" readonly placeholder="Finalized AI-generated text will appear here once manuscript is complete and AI is run..."></textarea>
+                     <div class="input-group" style="margin-top:10px;">
+                        <label for="fic-paid-checkbox">
+                            <input type="checkbox" id="fic-paid-checkbox"> Mark as Paid Content (for SNS posting)
+                        </label>
+                     </div>
+                     <button id="post-fic-button" disabled>Post to SNS</button>
+                     <button id="submit-to-event-button" disabled style="background-color: #4CAF50;">Submit to Current Event</button>
+                     <button id="clear-fic-button">Clear Output</button>
+                 </div>
+
+                 <div id="view-fics-area" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>My Published Works</h2><button class="close-modal-button" data-target="view-fics-area">X</button></div>
+                    <div id="my-fics-list"></div>
+                 </div>
+
+                 <div id="analytics-area" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>Analytics Dashboard</h2><button class="close-modal-button" data-target="analytics-area">X</button></div>
+                    <div id="analytics-content"></div>
+                 </div>
+
+                 <div id="profile-edit-area" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>Edit Profile & Fandoms</h2><button class="close-modal-button" data-target="profile-edit-area">X</button></div>
+                    <div id="profile-general-settings">
+                        <h3>General Settings</h3>
+                        <div class="input-group">
+                            <label for="edit-player-name">Author Name:</label>
+                            <input type="text" id="edit-player-name">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-api-key">Google AI Studio API Key:</label>
+                            <input type="password" id="edit-api-key">
+                            <small>Update your API key if needed.</small>
+                        </div>
+                         <button id="save-general-settings-button">Save General Settings</button>
+                    </div>
+                    <hr>
+                    <h3>Manage Fandom Sets</h3>
+                    <div id="fandom-sets-management-area">
+                        <!-- Fandom sets will be listed here by JS -->
+                    </div>
+                    <button id="add-new-fandom-set-button">Add New Fandom Set</button>
+                    <div id="edit-fandom-set-form" style="display:none; margin-top:15px; padding:10px; border:1px solid #ccc;">
+                        <h4 id="edit-fandom-set-form-title">Edit Fandom Set</h4>
+                        <input type="hidden" id="edit-fandom-set-id-input">
+                         <div class="input-group">
+                            <label for="edit-fandom-relationship-type">Relationship to Existing Fandoms:</label>
+                            <select id="edit-fandom-relationship-type">
+                                <option value="new_work">New Work & Fandom (Default)</option>
+                                <option value="existing_work_new_chars_pairing">Extend Existing Work (New Characters/Pairing on same base)</option>
+                                <option value="existing_work_alt_interp">Extend Existing Work (Alternative Interpretation of same Characters/Pairing)</option>
+                                <!-- <option value="existing_work_reverse_pairing">Extend Existing Work (Reverse of Existing Pairing)</option> -->
+                            </select>
+                            <small>How does this set relate to others? 'New Work' creates a totally separate universe. 'Extend' options tie it to an existing work's title and description but let you explore new character dynamics or interpretations within that world.</small>
+                        </div>
+                        <div class="input-group" id="edit-fandom-base-work-group" style="display:none;">
+                            <label for="edit-fandom-base-work-select">Base Work for Extension:</label>
+                            <select id="edit-fandom-base-work-select">
+                                <!-- Options populated by JS if extending existing work -->
+                            </select>
+                             <small>Work Title & Description will be copied from the base work and become read-only.</small>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-work-title-input">Work Title:</label>
+                            <input type="text" id="edit-fandom-work-title-input">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-work-desc-input">Work Description:</label>
+                            <textarea id="edit-fandom-work-desc-input" rows="2"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-fav-char-input">Favorite Character Name:</label>
+                            <input type="text" id="edit-fandom-fav-char-input">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-fav-char-desc-input">Favorite Character Description (Personality, Role):</label>
+                            <textarea id="edit-fandom-fav-char-desc-input" rows="2"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-fav-pairing-input">Favorite Pairing (A/B format):</label>
+                            <input type="text" id="edit-fandom-fav-pairing-input" placeholder="e.g. CharacterX/CharacterY">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-pairing-interp-input">Pairing Interpretation:</label>
+                            <textarea id="edit-fandom-pairing-interp-input" rows="2"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-is-primary-checkbox">
+                                <input type="checkbox" id="edit-fandom-is-primary-checkbox"> Make this Primary Fandom
+                            </label>
+                        </div>
+                        <button id="save-fandom-set-button">Save Fandom Set</button>
+                        <button id="cancel-edit-fandom-set-button" class="danger-button">Cancel</button>
+                    </div>
+                </div>
+
+                <div id="upcoming-events-modal" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>Upcoming Fan Events</h2><button class="close-modal-button" data-target="upcoming-events-modal">X</button></div>
+                    <div id="upcoming-events-list"></div>
+                    <div id="event-printing-options" style="display:none; margin-top: 15px; padding-top:10px; border-top:1px solid #eee;">
+                        <!-- Content will be populated by JS in renderUpcomingEventsList -->
+                    </div>
+                </div>
+
+                <div id="player-sns-post-modal" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>Write Your Own SNS Post</h2><button class="close-modal-button" data-target="player-sns-post-modal">X</button></div>
+                    <div class="input-group">
+                        <label for="player-sns-post-title">Post Title (optional):</label>
+                        <input type="text" id="player-sns-post-title" placeholder="Catchy title for your thoughts">
+                    </div>
+                    <div class="input-group">
+                        <label for="player-sns-post-content">Post Content (max 280 characters):</label>
+                        <textarea id="player-sns-post-content" rows="4" maxlength="280" placeholder="Share your fandom thoughts, project updates, or random musings..."></textarea>
+                        <small id="player-sns-post-char-count">280 characters remaining</small>
+                    </div>
+                    <button id="submit-player-sns-post-button">Post to SNS</button>
+                    <p id="player-sns-post-cooldown-message" style="color: #777; font-size: 0.9em; margin-top: 10px;"></p>
+                </div>
+
+                <div id="daily-log-modal" class="modal-like-area" style="display: none;">
+                    <div class="modal-header"><h2>Daily Event Log</h2><button class="close-modal-button" data-target="daily-log-modal">X</button></div>
+                    <div id="daily-log-filter-controls" style="margin-bottom:10px;">
+                        <label for="log-week-filter">Filter by Week:</label>
+                        <select id="log-week-filter">
+                            <option value="all">Show All Weeks</option>
+                            <!-- Week options populated by JS -->
+                        </select>
+                    </div>
+                    <div id="daily-log-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background-color: #f9f9f9; border-radius: 4px;">
+                        <!-- Log entries will be populated here -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div id="notification-popup" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #4CAF50; color: white; padding: 15px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 2000;">
+            <p id="notification-text" style="margin:0;"></p>
+        </div>
+    </div>
+    <!-- Placeholder for library image, if you add one later -->
+    <img src="images/placeholder_library.png" alt="Library Placeholder" style="display:none;">
+</body>
+</html>
+<link rel="stylesheet" href="index.css">
+<script src="index.tsx" type="module"></script>
