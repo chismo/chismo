@@ -1,0 +1,439 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project: Fandom Forge</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style id="game-styles"></style> <!-- Styles will be injected here -->
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.0.0",
+    "react": "https://esm.sh/react@^19.1.0"
+  }
+}
+</script>
+</head>
+<body class="bg-slate-100">
+<div id="app-container" class="container mx-auto p-4 max-w-6xl">
+<!-- Setup Screen (Visible Initially) -->
+<div id="setup-screen" class="bg-white p-6 rounded-lg shadow-xl">
+<h1 class="text-3xl font-bold text-purple-700 mb-4">Welcome, Aspiring Doujin Author!</h1>
+<p class="text-gray-700 mb-6">Let's set up your profile to start creating.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+        <div class="input-group mb-4">
+            <label for="api-key" class="block text-sm font-medium text-gray-700 mb-1">Google AI Studio API Key (Optional):</label>
+            <input type="password" id="api-key" placeholder="Enter your Gemini API Key" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <small class="text-xs text-gray-500 mt-1">Needed for AI fanfic generation. Your key is used directly by your browser. For local prototyping only.</small>
+        </div>
+
+        <div class="input-group mb-4">
+            <label for="player-name" class="block text-sm font-medium text-gray-700 mb-1">Your Author Name:</label>
+            <input type="text" id="player-name" placeholder="e.g., FanficMaster123" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+         <div class="input-group mb-4">
+             <label for="initial-story-mode-checkbox" class="flex items-center text-sm font-medium text-gray-700">
+                <input type="checkbox" id="initial-story-mode-checkbox" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-2"> Enable Story Mode with Supportive Senpai (Prologue & Tips)?
+            </label>
+            <small class="text-xs text-gray-500 mt-1">This NPC will provide tips and encouragement.</small>
+        </div>
+    </div>
+    <div>
+        <h3 class="text-xl font-semibold text-purple-600 mb-3">Primary Fandom Setup</h3>
+        <div class="input-group mb-4">
+            <label for="fandom-work-title" class="block text-sm font-medium text-gray-700 mb-1">Favorite Work (Title):</label>
+            <input type="text" id="fandom-work-title" placeholder="e.g., Galactic Heroes Saga" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div class="input-group mb-4">
+            <label for="fandom-work-desc" class="block text-sm font-medium text-gray-700 mb-1">Work Description (Briefly):</label>
+            <textarea id="fandom-work-desc" rows="2" placeholder="e.g., Epic space opera about rival commanders" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+        </div>
+        <div class="input-group mb-4">
+            <label for="fandom-fav-char" class="block text-sm font-medium text-gray-700 mb-1">Favorite Character Name:</label>
+            <input type="text" id="fandom-fav-char" placeholder="e.g., Commander Alex" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div class="input-group mb-4">
+            <label for="fandom-fav-char-desc" class="block text-sm font-medium text-gray-700 mb-1">Favorite Character Description (Personality, Role):</label>
+            <textarea id="fandom-fav-char-desc" rows="2" placeholder="e.g., Stoic but kind, brilliant strategist" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+        </div>
+        <div class="input-group mb-4">
+            <label for="fandom-fav-pairing" class="block text-sm font-medium text-gray-700 mb-1">Favorite Pairing (A/B):</label>
+            <input type="text" id="fandom-fav-pairing" placeholder="e.g., Alex/Ben" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div class="input-group mb-4">
+            <label for="fandom-pairing-interp" class="block text-sm font-medium text-gray-700 mb-1">Pairing Interpretation/Trope:</label>
+            <textarea id="fandom-pairing-interp" rows="2" placeholder="e.g., Enemies-to-lovers, slow burn angst" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+        </div>
+        <div class="input-group mb-4">
+            <label for="initial-fandom-popularity-tier" class="block text-sm font-medium text-gray-700 mb-1">Initial Fandom Popularity Tier:</label>
+            <select id="initial-fandom-popularity-tier" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="ExtremeMinor">Extreme Minor (Niche)</option>
+                <option value="Minor" selected>Minor (Dedicated Fans)</option>
+                <option value="Average">Average (Steady Following)</option>
+                <option value="Major">Major (Well-Known)</option>
+                <option value="MegaHit">Mega Hit (Mainstream Success)</option>
+            </select>
+        </div>
+    </div>
+</div>
+<button id="start-game-button" class="mt-6 w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">Start Creating!</button>
+</div>
+
+<!-- Main Game Screen (Hidden Initially) -->
+<div id="main-game-screen" style="display: none;" class="bg-gray-50 p-2 md:p-6 rounded-lg shadow-inner">
+    <div id="stats-bar" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 p-3 bg-purple-500 text-white rounded-lg shadow mb-4 text-sm">
+        <div>Money: <span id="stat-money" class="font-semibold">0</span> G</div>
+        <div>Stamina: <span id="stat-stamina" class="font-semibold">0 / 0</span></div>
+        <div>Writing: <span id="stat-writing" class="font-semibold">0</span></div>
+        <div>Popularity: <span id="stat-popularity" class="font-semibold">0</span></div>
+        <div>Deok-ryeok: <span id="stat-deokryeok" class="font-semibold">0</span></div>
+        <div>Date: W<span id="stat-week">1</span> D<span id="stat-day">1</span></div>
+    </div>
+
+    <div id="event-bar" style="display: none;" class="p-3 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-md shadow mb-4 text-sm">
+        Current Event: <strong id="event-name-display">None</strong> for Fandom: <strong id="event-fandom-display">N/A</strong> | Deadline: <span id="event-deadline-display">N/A</span>
+        <button id="view-upcoming-events-button" class="ml-2 py-1 px-2 text-xs font-medium rounded-md text-white bg-yellow-500 hover:bg-yellow-600">View Events</button>
+    </div>
+
+    <div id="game-controls" class="mb-4 pb-4 border-b border-gray-200 flex flex-wrap gap-2 items-center">
+         <button id="manual-save-button" class="btn-primary-sm">Save Game</button>
+         <button id="start-over-button" class="btn-danger-sm">Start Over</button>
+         <button id="clear-schedule-button" class="btn-secondary-sm">Clear Schedule</button>
+         <button id="edit-profile-button" class="btn-secondary-sm">Edit Profile</button>
+         <button id="analytics-button" class="btn-secondary-sm">Analytics</button>
+         <button id="view-message-log-button" class="btn-secondary-sm">Message Log</button>
+         <div class="input-group flex items-center ml-auto">
+            <label for="tutorial-friend-toggle-main" class="text-sm font-medium text-gray-700 mr-2">Supportive Senpai:</label>
+            <input type="checkbox" id="tutorial-friend-toggle-main" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+        </div>
+    </div>
+
+    <div id="main-content" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div id="scheduler" class="md:col-span-2 bg-white p-4 rounded-lg shadow">
+            <h2 class="text-xl font-semibold text-purple-700 mb-3">Plan Your Week</h2>
+            <div id="schedule-days" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 mb-3">
+                <!-- Daily schedule slots will be generated by JS -->
+            </div>
+            <button id="start-week-button" disabled class="w-full btn-primary">Start Week</button>
+            <small id="scheduler-validation-msg" class="block text-red-600 mt-2 text-xs">Please select an action for all days (and a project if writing) to start the week.</small>
+        </div>
+
+        <div id="action-buttons" class="bg-white p-4 rounded-lg shadow flex flex-col space-y-3">
+            <h3 class="text-lg font-semibold text-purple-700 mb-2">Actions</h3>
+            <button id="manage-projects-button" class="btn-secondary w-full">Manage Fanfic Projects</button>
+            <button id="view-fics-button" class="btn-secondary w-full">View My Fics</button>
+            <button id="view-sns-button" class="btn-secondary w-full">Check SNS</button>
+            <button id="open-player-custom-sns-post-modal-button" class="btn-secondary w-full">Write Custom SNS Post</button>
+        </div>
+    </div>
+
+    <!-- Modals and Popups -->
+    <div id="daily-popup" style="display: none;" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
+            <img id="daily-popup-image" src="https://picsum.photos/80/80?grayscale" alt="Current Action" class="mx-auto mb-3 w-20 h-20 object-cover rounded-md border border-gray-300">
+            <p id="daily-popup-text" class="text-gray-800 text-lg mb-2">Doing Action...</p>
+            <p id="daily-project-progress-text" class="text-sm text-green-600"></p>
+        </div>
+    </div>
+
+    <div id="prologue-modal" class="modal-base" style="display:none;">
+        <div class="modal-content-wrapper text-center">
+            <div class="modal-header"><h2>Welcome to Fandom Forge!</h2></div>
+            <img src="https://picsum.photos/100/100?random=1&grayscale" alt="Supportive Senpai" class="w-24 h-24 rounded-full mx-auto mb-4 border-2 border-purple-300">
+            <div id="prologue-text" class="text-left mb-4 max-h-80 overflow-y-auto p-2 border rounded-md bg-gray-50"></div>
+            <button id="close-prologue-button" class="btn-primary w-full">Let's Begin!</button>
+        </div>
+    </div>
+    
+    <div id="manage-projects-modal" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Manage Fanfic Projects</h2><button class="close-modal-button" data-target="manage-projects-modal">X</button></div>
+            <div id="fanfic-projects-list-container" class="modal-body max-h-96 overflow-y-auto"></div>
+            <button id="plan-new-project-from-manage-button" class="btn-primary mt-4 w-full">Plan New Fanfic Project</button>
+        </div>
+    </div>
+
+    <div id="sns-feed" class="modal-base" style="display: none;">
+         <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Simulated SNS Feed</h2><button class="close-modal-button" data-target="sns-feed">X</button></div>
+            <div id="posts-container" class="modal-body max-h-[70vh] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="fanfic-planning-modal" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Plan New Fanfic Project</h2><button class="close-modal-button" data-target="fanfic-planning-modal">X</button></div>
+            <div class="modal-body space-y-4 max-h-[70vh] overflow-y-auto">
+                <div class="input-group">
+                    <label for="plan-fic-fandom-set" class="label-primary">Fandom Set for this Fic:</label>
+                    <select id="plan-fic-fandom-set" class="select-primary"></select>
+                </div>
+                <div class="input-group">
+                    <label for="plan-fic-title" class="label-primary">Fanfic Title:</label>
+                    <input type="text" id="plan-fic-title" placeholder="Your awesome title" class="input-primary">
+                </div>
+                <div class="input-group">
+                    <label class="label-primary">Genres (Select up to 2):</label>
+                    <div id="plan-fic-genre-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2 border rounded-md"></div>
+                </div>
+                <div class="input-group">
+                    <label for="plan-fic-materials" class="label-primary">Key Materials/Tropes (Ctrl+Click for multiple):</label>
+                    <select id="plan-fic-materials" multiple size="5" class="select-primary"></select>
+                </div>
+                <div class="input-group" id="plan-fic-sequel-group" style="display:none;">
+                    <label for="plan-fic-previous-fic-for-sequel" class="label-primary">Select Previous Fic to Continue:</label>
+                    <select id="plan-fic-previous-fic-for-sequel" class="select-primary"></select>
+                </div>
+                <div class="input-group">
+                    <label for="plan-fic-scenario" class="label-primary">Overall Scenario Plan (brief summary):</label>
+                    <textarea id="plan-fic-scenario" rows="3" placeholder="e.g., A meets B under mysterious circumstances..." class="textarea-primary"></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="plan-fic-target-progress" class="label-primary">Target Complexity/Length (Work Units):</label>
+                    <select id="plan-fic-target-progress" class="select-primary">
+                        <option value="50">Short Story (approx. 50 WU)</option>
+                        <option value="100" selected>Medium Story (approx. 100 WU)</option>
+                        <option value="150">Long Story (approx. 150 WU)</option>
+                        <option value="200">Epic Story (approx. 200 WU)</option>
+                    </select>
+                </div>
+            </div>
+            <button id="start-new-project-button" class="btn-primary w-full mt-4">Start This Project!</button>
+        </div>
+    </div>
+
+     <div id="project-detail-modal" class="modal-base" style="display: none;">
+         <div class="modal-content-wrapper">
+             <div class="modal-header"><h2>Project: "<span id="modal-project-title"></span>"</h2><button class="close-modal-button" data-target="project-detail-modal">X</button></div>
+             <div class="modal-body space-y-3 max-h-[70vh] overflow-y-auto">
+                 <p><strong>Fandom:</strong> <span id="modal-project-fandom-set-name" class="text-purple-600"></span></p>
+                 <p><strong>Genres:</strong> <span id="modal-project-genre"></span> | <strong>Materials:</strong> <span id="modal-project-materials"></span></p>
+                 <p id="modal-project-sequel-info" style="display:none;"><strong>Sequel to:</strong> <span id="modal-project-previous-fic-title" class="text-purple-600"></span></p>
+                 <p><strong>Scenario Plan:</strong></p>
+                 <pre id="modal-project-scenario" class="bg-gray-100 p-2 rounded-md text-sm whitespace-pre-wrap"></pre>
+                 <p><strong>Progress:</strong> <span id="modal-project-progress" class="font-semibold">0</span> / <span id="modal-project-target" class="font-semibold">100</span> Work Units</p>
+
+                 <button id="finalize-fic-button" disabled class="btn-success w-full">Finalize Manuscript with AI 🤖</button>
+                 <span id="fic-loading-indicator" style="display:none;" class="ml-2 text-sm text-gray-500">Generating... Please Wait...</span>
+
+                 <textarea id="generated-fic-output" rows="10" readonly placeholder="Finalized AI-generated text will appear here..." class="textarea-primary w-full"></textarea>
+                 <div class="flex items-center space-x-4 mt-2">
+                    <div class="input-group flex items-center">
+                        <input type="checkbox" id="fic-paid-checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-2">
+                        <label for="fic-paid-checkbox" class="label-primary cursor-pointer">Mark as Paid Content</label>
+                    </div>
+                    <div id="fic-price-group" class="input-group flex items-center" style="display:none;">
+                        <label for="fic-price" class="label-primary mr-2">Price (G):</label>
+                        <input type="number" id="fic-price" min="500" max="20000" step="100" value="1500" class="input-primary w-32">
+                    </div>
+                </div>
+                <small class="text-xs text-gray-500 block" id="fic-price-group-small" style="display:none;">Higher price might reduce sales but increase per-sale profit.</small>
+             </div>
+             <div class="mt-4 flex space-x-2">
+                <button id="post-fic-button" disabled class="btn-primary flex-1">Post to SNS</button>
+                <button id="submit-to-event-button" disabled class="btn-event flex-1">Submit to Current Event</button>
+                <button id="clear-fic-button" class="btn-secondary-sm">Clear Output</button>
+             </div>
+         </div>
+     </div>
+
+     <div id="view-fics-area" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>My Published Works</h2><button class="close-modal-button" data-target="view-fics-area">X</button></div>
+            <div id="my-fics-list" class="modal-body max-h-[70vh] overflow-y-auto"></div>
+        </div>
+     </div>
+
+    <div id="analytics-area" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Analytics Dashboard</h2><button class="close-modal-button" data-target="analytics-area">X</button></div>
+            <div id="analytics-content" class="modal-body max-h-[70vh] overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="profile-edit-area" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Edit Profile & Fandoms</h2><button class="close-modal-button" data-target="profile-edit-area">X</button></div>
+            <div class="modal-body space-y-6 max-h-[80vh] overflow-y-auto">
+                <div id="profile-general-settings" class="p-4 border rounded-lg bg-gray-50">
+                    <h3 class="text-lg font-semibold text-purple-600 mb-3">General Settings</h3>
+                    <div class="input-group mb-3">
+                        <label for="edit-player-name" class="label-primary">Author Name:</label>
+                        <input type="text" id="edit-player-name" class="input-primary">
+                    </div>
+                    <div class="input-group mb-3">
+                        <label for="edit-api-key" class="label-primary">Google AI Studio API Key:</label>
+                        <input type="password" id="edit-api-key" class="input-primary">
+                        <small class="text-xs text-gray-500 mt-1">Update your API key if needed.</small>
+                    </div>
+                     <button id="save-general-settings-button" class="btn-primary w-full">Save General Settings</button>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-600 mb-3">Manage Fandom Sets</h3>
+                    <div id="fandom-sets-management-area" class="space-y-3 mb-3"></div>
+                    <button id="add-new-fandom-set-button" class="btn-success w-full mb-3">Add New Fandom Set</button>
+                    <div id="edit-fandom-set-form" style="display:none;" class="p-4 border rounded-lg bg-gray-50 space-y-3">
+                        <h4 id="edit-fandom-set-form-title" class="text-md font-semibold text-purple-500">Edit Fandom Set</h4>
+                        <input type="hidden" id="edit-fandom-set-id-input">
+                         <div class="input-group">
+                            <label for="edit-fandom-relationship-type" class="label-primary">Relationship to Existing Fandoms:</label>
+                            <select id="edit-fandom-relationship-type" class="select-primary">
+                                <option value="new_work">New Work & Fandom (Default)</option>
+                                <option value="existing_work_new_chars_pairing">Extend Existing Work (New Characters/Pairing on same base)</option>
+                                <option value="existing_work_alt_interp">Extend Existing Work (Alternative Interpretation of same Characters/Pairing)</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="select-base-fandom-set-group" style="display:none;">
+                            <label for="select-base-fandom-set" class="label-primary">Base Work for Extension:</label>
+                            <select id="select-base-fandom-set" class="select-primary"></select>
+                             <small class="text-xs text-gray-500 mt-1">Work Title & Description will be copied from the base work and become read-only.</small>
+                        </div>
+                         <div class="input-group" id="edit-fandom-popularity-tier-group" style="display:none;">
+                            <label for="edit-fandom-popularity-tier" class="label-primary">Fandom Popularity Tier (for New Works):</label>
+                            <select id="edit-fandom-popularity-tier" class="select-primary">
+                                <option value="ExtremeMinor">Extreme Minor</option>
+                                <option value="Minor">Minor</option>
+                                <option value="Average" selected>Average</option>
+                                <option value="Major">Major</option>
+                                <option value="MegaHit">Mega Hit</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-work-title-input" class="label-primary">Work Title:</label>
+                            <input type="text" id="edit-fandom-work-title-input" class="input-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-work-desc-input" class="label-primary">Work Description:</label>
+                            <textarea id="edit-fandom-work-desc-input" rows="2" class="textarea-primary"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-fav-char-input" class="label-primary">Favorite Character Name:</label>
+                            <input type="text" id="edit-fandom-fav-char-input" class="input-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-fav-char-desc-input" class="label-primary">Favorite Character Description (Personality, Role):</label>
+                            <textarea id="edit-fandom-fav-char-desc-input" rows="2" class="textarea-primary"></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-fav-pairing-input" class="label-primary">Favorite Pairing (A/B format):</label>
+                            <input type="text" id="edit-fandom-fav-pairing-input" placeholder="e.g. CharacterX/CharacterY" class="input-primary">
+                        </div>
+                        <div class="input-group">
+                            <label for="edit-fandom-pairing-interp-input" class="label-primary">Pairing Interpretation:</label>
+                            <textarea id="edit-fandom-pairing-interp-input" rows="2" class="textarea-primary"></textarea>
+                        </div>
+                        <div class="input-group flex items-center">
+                            <input type="checkbox" id="edit-fandom-is-primary-checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-2">
+                            <label for="edit-fandom-is-primary-checkbox" class="label-primary cursor-pointer">Make this Primary Fandom</label>
+                        </div>
+                        <div class="flex space-x-2 mt-2">
+                            <button id="save-fandom-set-button" class="btn-primary flex-1">Save Fandom Set</button>
+                            <button id="cancel-edit-fandom-set-button" class="btn-danger-sm flex-1">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="upcoming-events-modal" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Upcoming Fan Events</h2><button class="close-modal-button" data-target="upcoming-events-modal">X</button></div>
+            <div id="upcoming-events-list" class="modal-body max-h-60 overflow-y-auto"></div>
+            <div id="event-submission-fic-selection-area" style="display:none;" class="mt-4 p-3 border-t">
+                <h4 class="text-md font-semibold mb-2">Select Fic to Submit/Reprint:</h4>
+                <select id="event-submit-fic-select" class="select-primary w-full mb-2"></select>
+                <p id="event-submission-context-info" class="text-xs text-gray-600 mb-2"></p>
+                <button id="confirm-event-fic-submission-button" class="btn-success w-full">Confirm Submission Choice</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="doujinshi-printing-options-modal" class="modal-base" style="display:none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header">
+                <h3 id="doujinshi-modal-title">Doujinshi Printing: "<span id="doujinshi-fic-title-span">Fic Title</span>"</h3>
+                <button class="close-modal-button" data-target="doujinshi-printing-options-modal">X</button>
+            </div>
+            <div class="modal-body space-y-3">
+                <input type="hidden" id="doujinshi-target-fic-id">
+                <input type="hidden" id="doujinshi-target-event-id">
+                <input type="hidden" id="doujinshi-is-rerelease-flag" value="false">
+
+                <div class="input-group">
+                    <label for="doujinshi-paper-quality" class="label-primary">Paper Quality:</label>
+                    <select id="doujinshi-paper-quality" class="select-primary">
+                        <option value="Budget">Budget (Cheapest, basic)</option>
+                        <option value="Standard" selected>Standard (Good quality)</option>
+                        <option value="Premium">Premium (Best, thick paper)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="doujinshi-cover-quality" class="label-primary">Cover Quality:</label>
+                    <select id="doujinshi-cover-quality" class="select-primary">
+                        <option value="Simple">Simple B&W (Text-based)</option>
+                        <option value="Color" selected>Color Print (Basic image/design)</option>
+                        <option value="PremiumGlossy">Premium Glossy Color (High-quality art)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="doujinshi-print-run-size" class="label-primary">Print Run Size (Copies):</label>
+                    <input type="number" id="doujinshi-print-run-size" value="50" min="10" max="300" step="10" class="input-primary">
+                </div>
+                <p class="text-sm">Estimated Page Count: <span id="doujinshi-estimated-page-count" class="font-semibold">N/A</span></p>
+                <p class="text-sm">Estimated Printing Cost: <span id="doujinshi-estimated-printing-cost" class="font-semibold">0</span>G</p>
+                <small id="doujinshi-early-bird-discount-text" class="text-green-600 text-xs" style="display:none;">Early bird discount (10%) applied!</small>
+            </div>
+            <button id="confirm-doujinshi-printing-button" class="btn-primary w-full mt-4">Confirm Printing & Submit</button>
+        </div>
+    </div>
+
+    <div id="player-custom-sns-post-modal" class="modal-base" style="display: none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Write Custom SNS Post</h2><button class="close-modal-button" data-target="player-custom-sns-post-modal">X</button></div>
+            <div class="modal-body space-y-3">
+                <div class="input-group">
+                    <label for="player-custom-sns-post-title" class="label-primary">Post Title (optional):</label>
+                    <input type="text" id="player-custom-sns-post-title" placeholder="Catchy title for your thoughts" class="input-primary">
+                </div>
+                <div class="input-group">
+                    <label for="player-custom-sns-post-content" class="label-primary">Post Content (max 280 characters):</label>
+                    <textarea id="player-custom-sns-post-content" rows="4" maxlength="280" placeholder="Share your fandom thoughts..." class="textarea-primary"></textarea>
+                    <small id="player-custom-sns-post-char-count" class="text-xs text-gray-500 mt-1">280 characters remaining</small>
+                </div>
+                 <p id="player-custom-sns-post-cooldown-message" class="text-xs text-gray-500"></p>
+            </div>
+            <button id="submit-player-custom-sns-post-button" class="btn-primary w-full mt-4">Post to SNS</button>
+        </div>
+    </div>
+
+    <div id="message-log-area" class="modal-base" style="display:none;">
+        <div class="modal-content-wrapper">
+            <div class="modal-header"><h2>Message Log</h2><button class="close-modal-button" data-target="message-log-area">X</button></div>
+            <div id="message-log-container" class="modal-body max-h-96 overflow-y-auto p-2 border rounded-md bg-gray-50"></div>
+        </div>
+    </div>
+
+</div> <!-- End main-game-screen -->
+
+<div id="notification-popup" style="display: none;" class="fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white text-sm z-[100]">
+    <p id="notification-text" class="m-0"></p>
+</div>
+
+</div> <!-- End app-container -->
+
+<!-- Placeholder images (not directly used in this Tailwind version but kept for reference if game logic uses them) -->
+<img src="https://picsum.photos/80/80?random=rest&grayscale" alt="Rest" style="display:none;">
+<img src="https://picsum.photos/80/80?random=work&grayscale" alt="Work" style="display:none;">
+<!-- ... other placeholder images ... -->
+
+<script type="module" src="/index.tsx"></script>
+</body>
+<!-- 수정된 스크립트 로드. 컴파일된 index.js 파일을 참조합니다. -->
+<script type="module" src="./index.js"></script>
+</body>
+</html>
